@@ -222,25 +222,25 @@ function factoryReducer(state: FactoryState, action: FactoryAction): FactoryStat
               const currentStation = belt.stations[item.currentStationIndex]
               const hasOperator = currentStation && currentStation.operatorIds.length > 0
 
-              // If no operator, item is stuck
-              if (!hasOperator) {
-                return { ...item, stuckAt: item.currentStationIndex }
-              }
-
-              // Clear stuck status
-              const newProgress = item.progress + 25 // Move in blocky 25% increments
+              // Move item forward
+              const newProgress = item.progress + 20
 
               if (newProgress >= 100) {
+                // Item reached end of current station
+                if (!hasOperator) {
+                  // No operator at this station - item is consumed/lost
+                  return null
+                }
                 // Move to next station
                 const nextIndex = item.currentStationIndex + 1
                 if (nextIndex >= belt.stations.length) {
-                  // Item completed, remove it
+                  // Item completed all stations, remove it
                   return null
                 }
-                return { ...item, currentStationIndex: nextIndex, progress: 0, stuckAt: undefined }
+                return { ...item, currentStationIndex: nextIndex, progress: 0 }
               }
 
-              return { ...item, progress: newProgress, stuckAt: undefined }
+              return { ...item, progress: newProgress }
             })
             .filter((item): item is WorkItem => item !== null)
 
@@ -346,7 +346,7 @@ export function FactoryProvider({ children }: { children: ReactNode }) {
           dispatch({ type: "TICK_ITEMS", payload: { beltId: belt.id } })
         }
       })
-    }, 400) // Blocky 400ms ticks for 8-bit feel
+    }, 700) // Slower tick for smoother feel
 
     return () => clearInterval(interval)
   }, [state.conveyorBelts])
@@ -358,17 +358,20 @@ export function FactoryProvider({ children }: { children: ReactNode }) {
       state.conveyorBelts.forEach((belt) => {
         if (!belt.isRunning) return
         if (belt.stations.length === 0) return
-        
-        // Check if first station has operators (required for items to spawn)
+
         const firstStation = belt.stations[0]
         const firstStationHasOperator = firstStation.operatorIds.length > 0
-        
-        // Only spawn if first station is staffed and random chance hits
-        if (firstStationHasOperator && Math.random() < 0.3) {
+
+        // Spawn items if:
+        // 1. autoIncoming is ON - items come from outside (external source)
+        // 2. OR first station has operators and creates items
+        const shouldSpawn = belt.autoIncoming || (firstStationHasOperator && firstStation.createsItems)
+
+        if (shouldSpawn) {
           dispatch({ type: "SPAWN_ITEM", payload: { beltId: belt.id, atStationIndex: 0 } })
         }
       })
-    }, 2000)
+    }, 1500)
 
     return () => clearInterval(interval)
   }, [state.conveyorBelts])

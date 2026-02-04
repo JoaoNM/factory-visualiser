@@ -50,8 +50,8 @@ export function StationModal({ station, beltId, beltColor, isOpen, onClose }: St
 
   const handleToggleCreatesItems = (checked: boolean) => {
     dispatch({
-      type: "TOGGLE_CREATES_ITEMS",
-      payload: { beltId, stationId: currentStation.id, createsItems: checked },
+      type: "UPDATE_STATION",
+      payload: { beltId, stationId: currentStation.id, updates: { createsItems: checked } },
     })
   }
 

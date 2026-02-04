@@ -141,14 +141,14 @@ export function SettingsPanel() {
                   placeholder="Or paste JSON here..."
                   value={importJson}
                   onChange={(e) => setImportJson(e.target.value)}
-                  className="bg-background border-2 border-border text-sm font-mono min-h-[100px]"
+                  className="bg-background border-2 border-border text-sm font-mono min-h-[100px] max-h-[200px] resize-none"
                 />
 
                 {importError && (
                   <p className="text-xs text-destructive">{importError}</p>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-2">
                   <Button
                     variant="outline"
                     onClick={() => {

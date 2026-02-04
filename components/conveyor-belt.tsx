@@ -300,34 +300,30 @@ export function ConveyorBelt({ belt }: ConveyorBeltProps) {
             </Popover>
           </div>
 
-          {/* Moving items - under stations (z-0) */}
+          {/* Moving items on belt */}
           {belt.items.map((item) => {
             const stationWidth = 100 / (belt.stations.length + 1) // +1 for add button space
             const basePosition = item.currentStationIndex * stationWidth
             const progressOffset = (item.progress / 100) * stationWidth
             const leftPosition = basePosition + progressOffset + stationWidth / 2
 
-            const isStuck = item.stuckAt !== undefined
-
             return (
               <div
                 key={item.id}
-                className="absolute top-1/2 z-0"
+                className="absolute pointer-events-none"
                 style={{
                   left: `${Math.min(leftPosition, 95)}%`,
+                  top: "50%",
                   transform: "translateX(-50%) translateY(-50%)",
-                  transition: "left 0.1s steps(1)", // Blocky step transition
+                  transition: "left 0.5s linear",
+                  zIndex: 20,
                 }}
               >
                 <div
-                  className={`w-8 h-8 flex items-center justify-center bg-background border-2 ${
-                    isStuck ? "animate-pulse" : ""
-                  }`}
-                  style={{
-                    borderColor: isStuck ? "var(--destructive)" : belt.color,
-                  }}
+                  className="w-7 h-7 flex items-center justify-center bg-card border-2 shadow-lg rounded-sm"
+                  style={{ borderColor: belt.color }}
                 >
-                  <PixelIcon name={item.icon} size={16} />
+                  <PixelIcon name={item.icon} size={14} />
                 </div>
               </div>
             )

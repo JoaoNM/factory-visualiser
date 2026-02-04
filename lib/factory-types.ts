@@ -75,38 +75,6 @@ export const DEFAULT_FACTORY_STATE: FactoryState = {
         { id: "f4", label: "Ship", icon: "truck", operatorIds: [], createsItems: false },
       ],
     },
-    {
-      id: "hiring",
-      title: "Hiring Process",
-      color: "#f97316",
-      itemIcon: "briefcase",
-      autoIncoming: false,
-      needsOutput: false, // Not urgent by default
-      isRunning: false,
-      items: [],
-      stations: [
-        { id: "h1", label: "Source", icon: "search", operatorIds: [], createsItems: true },
-        { id: "h2", label: "Screen", icon: "contact-multiple", operatorIds: [], createsItems: false },
-        { id: "h3", label: "Interview", icon: "chat", operatorIds: [], createsItems: false },
-        { id: "h4", label: "Offer", icon: "trophy", operatorIds: [], createsItems: false },
-      ],
-    },
-    {
-      id: "coaching",
-      title: "Coaching Journey",
-      color: "#60a5fa",
-      itemIcon: "human-run",
-      autoIncoming: false,
-      needsOutput: true,
-      isRunning: false,
-      items: [],
-      stations: [
-        { id: "c1", label: "Assess", icon: "bullseye", operatorIds: [], createsItems: true },
-        { id: "c2", label: "Plan", icon: "calendar", operatorIds: [], createsItems: false },
-        { id: "c3", label: "Execute", icon: "zap", operatorIds: [], createsItems: false },
-        { id: "c4", label: "Review", icon: "check", operatorIds: [], createsItems: false },
-      ],
-    },
   ],
 }
 

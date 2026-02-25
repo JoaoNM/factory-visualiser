@@ -5,6 +5,7 @@ import { FactoryProvider, useFactory } from "@/lib/factory-context"
 import { ConveyorBelt } from "@/components/conveyor-belt"
 import { TeamPanel } from "@/components/team-panel"
 import { SettingsPanel } from "@/components/settings-panel"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -54,6 +55,7 @@ function FactoryFloor() {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+      <ThemeToggle />
       {/* Header */}
       <header className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">

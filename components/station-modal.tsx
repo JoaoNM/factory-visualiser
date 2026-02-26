@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useFactory } from "@/lib/factory-context"
 import type { Station } from "@/lib/factory-types"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 
@@ -34,6 +36,16 @@ interface StationModalProps {
 
 export function StationModal({ station, beltId, beltColor, isOpen, onClose }: StationModalProps) {
   const { state, assignOperator, unassignOperator, removeStation, dispatch } = useFactory()
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedLabel, setEditedLabel] = useState("")
+
+  // Reset editing state when modal opens/closes or station changes
+  useEffect(() => {
+    if (station) {
+      setEditedLabel(station.label)
+      setIsEditingName(false)
+    }
+  }, [station, isOpen])
 
   if (!station) return null
 
@@ -55,6 +67,26 @@ export function StationModal({ station, beltId, beltColor, isOpen, onClose }: St
     })
   }
 
+  const handleSaveLabel = () => {
+    const trimmedLabel = editedLabel.trim()
+    if (trimmedLabel && trimmedLabel !== currentStation.label) {
+      dispatch({
+        type: "UPDATE_STATION",
+        payload: { beltId, stationId: currentStation.id, updates: { label: trimmedLabel } },
+      })
+    }
+    setIsEditingName(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSaveLabel()
+    } else if (e.key === "Escape") {
+      setEditedLabel(currentStation.label)
+      setIsEditingName(false)
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-card border-2 border-border max-w-md">
@@ -66,7 +98,27 @@ export function StationModal({ station, beltId, beltColor, isOpen, onClose }: St
             >
               <PixelIcon name={currentStation.icon} size={20} />
             </div>
-            {currentStation.label} Station
+            {isEditingName ? (
+              <div className="flex items-center gap-2 flex-1">
+                <Input
+                  value={editedLabel}
+                  onChange={(e) => setEditedLabel(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onBlur={handleSaveLabel}
+                  className="h-8 text-sm uppercase bg-background border-border"
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsEditingName(true)}
+                className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer"
+                title="Click to rename"
+              >
+                {currentStation.label} Station
+                <PixelIcon name="edit" size={14} />
+              </button>
+            )}
           </DialogTitle>
         </DialogHeader>
 

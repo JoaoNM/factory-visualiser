@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useFactory } from "@/lib/factory-context"
 import type { Station } from "@/lib/factory-types"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 
@@ -34,12 +36,20 @@ interface StationModalProps {
 
 export function StationModal({ station, beltId, beltColor, isOpen, onClose }: StationModalProps) {
   const { state, assignOperator, unassignOperator, removeStation, dispatch } = useFactory()
-
-  if (!station) return null
+  const [stationName, setStationName] = useState(station?.label ?? "")
 
   // Get fresh station data from state to ensure real-time updates
   const belt = state.conveyorBelts.find(b => b.id === beltId)
-  const currentStation = belt?.stations.find(s => s.id === station.id) ?? station
+  const currentStation = belt?.stations.find(s => s.id === station?.id) ?? station
+
+  // Sync local state when station changes
+  useEffect(() => {
+    if (currentStation) {
+      setStationName(currentStation.label)
+    }
+  }, [currentStation?.label])
+
+  if (!station) return null
 
   const assignedOperators = state.operators.filter((op) =>
     currentStation.operatorIds.includes(op.id)
@@ -53,6 +63,15 @@ export function StationModal({ station, beltId, beltColor, isOpen, onClose }: St
       type: "UPDATE_STATION",
       payload: { beltId, stationId: currentStation.id, updates: { createsItems: checked } },
     })
+  }
+
+  const handleRename = () => {
+    if (stationName.trim() && stationName !== currentStation.label) {
+      dispatch({
+        type: "UPDATE_STATION",
+        payload: { beltId, stationId: currentStation.id, updates: { label: stationName.trim() } },
+      })
+    }
   }
 
   return (
@@ -71,6 +90,24 @@ export function StationModal({ station, beltId, beltColor, isOpen, onClose }: St
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
+          {/* Rename station */}
+          <div>
+            <h4 className="text-xs uppercase text-muted-foreground mb-2 flex items-center gap-2">
+              <PixelIcon name="edit" size={14} />
+              Station Name
+            </h4>
+            <div className="flex gap-2">
+              <Input
+                value={stationName}
+                onChange={(e) => setStationName(e.target.value)}
+                onBlur={handleRename}
+                onKeyDown={(e) => e.key === "Enter" && handleRename()}
+                className="flex-1 bg-background border-2 border-border text-foreground"
+                placeholder="Station name"
+              />
+            </div>
+          </div>
+
           {/* Assigned operators */}
           <div>
             <h4 className="text-xs uppercase text-muted-foreground mb-2 flex items-center gap-2">

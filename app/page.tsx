@@ -1,169 +1,160 @@
 "use client"
 
 import { useState } from "react"
-import { FactoryProvider, useFactory } from "@/lib/factory-context"
-import { ConveyorBelt } from "@/components/conveyor-belt"
-import { TeamPanel } from "@/components/team-panel"
-import { SettingsPanel } from "@/components/settings-panel"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Input } from "@/components/ui/input"
-import { AddBeltCard } from "@/components/add-belt-card" // Added import for AddBeltCard
+import { Textarea } from "@/components/ui/textarea"
+import { Spinner } from "@/components/ui/spinner"
+import { MermaidRender } from "@/components/mermaid-render"
 
-const BELT_COLORS = [
-  "#4ade80", // green
-  "#facc15", // yellow
-  "#f97316", // orange
-  "#60a5fa", // blue
-  "#a78bfa", // violet
-  "#f472b6", // pink
-  "#22d3ee", // cyan
-  "#ef4444", // red
+const EXAMPLES = [
+  "A customer signs up, then we email them a verification link. If they click it within 24 hours their account activates, otherwise it expires.",
+  "Order checkout: check the cart, then take payment. If payment fails, retry once and then cancel. If it succeeds, reserve stock and send a confirmation.",
+  "New support ticket comes in. If it's urgent, assign it to a senior agent, otherwise add it to the general queue. Once resolved, email the customer for feedback.",
 ]
 
-const ITEM_ICONS = [
-  "user", "gift", "briefcase", "human-run", "mail", "coin", 
-  "document", "heart", "lightbulb", "cog"
-]
+export default function Page() {
+  const [prompt, setPrompt] = useState("")
+  const [code, setCode] = useState("")
+  const [loading, setLoading] = useState(false)
 
-function PixelIcon({ name, size = 24, invert = false }: { name: string; size?: number; invert?: boolean }) {
+  const hasChart = code.trim().length > 0
+
+  async function generate() {
+    const text = prompt.trim()
+    if (!text) {
+      toast.error("Describe the flow first.")
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Send the current chart so the model edits it instead of starting over.
+        body: JSON.stringify({ prompt: text, current: hasChart ? code : undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || "Generation failed.")
+        return
+      }
+      setCode(data.mermaid)
+      setPrompt("")
+    } catch (e) {
+      toast.error(`Request failed: ${String(e)}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(code)
+    toast.success("Diagram code copied.")
+  }
+
+  function downloadSvg() {
+    const svg = document.querySelector(".mermaid-output svg")
+    if (!svg) {
+      toast.error("Nothing to download yet.")
+      return
+    }
+    const blob = new Blob([svg.outerHTML], { type: "image/svg+xml" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "flowchart.svg"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
-    <img
-      src={`https://unpkg.com/pixelarticons@1.8.1/svg/${name}.svg`}
-      alt={name}
-      width={size}
-      height={size}
-      style={{ imageRendering: "pixelated", filter: invert ? "invert(1)" : undefined }}
-    />
-  )
-}
-
-function FactoryFloor() {
-  const { state } = useFactory()
-
-  // Count bottlenecks - only the FIRST blocking station on belts that need output
-  const bottleneckCount = state.conveyorBelts.reduce((acc, belt) => {
-    if (!belt.needsOutput) return acc // Skip belts that don't need output
-    const hasBlocker = belt.stations.some((s) => s.operatorIds.length === 0)
-    return acc + (hasBlocker ? 1 : 0)
-  }, 0)
-
-  // Count running belts
-  const runningBelts = state.conveyorBelts.filter((b) => b.isRunning).length
-
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-      {/* Header */}
-      <header className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 bg-primary flex items-center justify-center">
-                <PixelIcon name="buildings" size={20} />
-              </div>
-              <h1 className="text-xl md:text-2xl font-bold text-foreground uppercase tracking-tight">
-                Factory Floor
-              </h1>
-            </div>
-            <p className="text-muted-foreground text-xs uppercase">
-              Everything is an assembly line. Assign operators to run your processes.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2 border-2 border-border bg-transparent text-foreground hover:bg-muted">
-                  <PixelIcon name="script" size={16} invert />
-                  <span className="uppercase text-xs">{"Elon's Rules"}</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-2 border-border max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-foreground uppercase flex items-center gap-2">
-                    <PixelIcon name="script" size={20} />
-                    The 5 Rules
-                  </DialogTitle>
-                </DialogHeader>
-                <ol className="space-y-3 text-sm text-foreground">
-                  <li className="flex gap-3">
-                    <span className="text-primary font-bold">1.</span>
-                    <span>Question every requirement</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="text-primary font-bold">2.</span>
-                    <span>Delete as many steps as you can</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="text-primary font-bold">3.</span>
-                    <span>Simplify / optimize — only after deleting</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="text-primary font-bold">4.</span>
-                    <span>Accelerate cycle time</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="text-primary font-bold">5.</span>
-                    <span>Automate last</span>
-                  </li>
-                </ol>
-              </DialogContent>
-            </Dialog>
-            <TeamPanel />
-            <SettingsPanel />
-          </div>
-        </div>
-
-        {/* Status bar */}
-        <div className="mt-4 flex flex-wrap gap-4 text-xs">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-card border-2 border-border">
-            <div className="w-2 h-2 bg-primary" />
-            <span className="text-muted-foreground uppercase">
-              {runningBelts}/{state.conveyorBelts.length} Running
-            </span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-card border-2 border-border">
-            <div className="w-2 h-2 bg-accent" />
-            <span className="text-muted-foreground uppercase">
-              {state.operators.length} Operators
-            </span>
-          </div>
-          {bottleneckCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-destructive/20 border-2 border-destructive">
-              <div className="w-2 h-2 bg-destructive animate-pulse" />
-              <span className="text-destructive uppercase">
-                {bottleneckCount} Bottleneck{bottleneckCount !== 1 ? "s" : ""}
-              </span>
-            </div>
-          )}
-        </div>
+    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-4 py-10 md:px-8">
+      <header className="border-b border-border pb-5">
+        <h1 className="text-2xl font-semibold tracking-tight">Text to Flowchart</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Describe a process in plain English and get a clean flowchart. Already have one? Just say what to change.
+        </p>
       </header>
 
-      {/* Assembly Lines Grid */}
-      <div className="grid gap-6 md:gap-8">
-        {state.conveyorBelts.map((belt) => (
-          <ConveyorBelt key={belt.id} belt={belt} />
-        ))}
-        
-        {/* Add new belt */}
-        <AddBeltCard />
+      <div className="grid flex-1 gap-8 lg:grid-cols-2">
+        {/* Input column — fixed height, does not stretch with the diagram */}
+        <section className="flex flex-col gap-3 self-start">
+          <Textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") generate()
+            }}
+            placeholder={
+              hasChart
+                ? "Describe a change, e.g. “add a step to notify the manager before approval”"
+                : "e.g. A customer places an order, we check inventory, and if it's in stock we ship it, otherwise we put it on backorder…"
+            }
+            className="h-44 resize-none text-base leading-relaxed"
+          />
+          <div className="flex items-center gap-3">
+            <Button onClick={generate} disabled={loading}>
+              {loading ? <Spinner /> : null}
+              {loading ? "Working…" : hasChart ? "Update flowchart" : "Generate flowchart"}
+            </Button>
+            <span className="text-xs text-muted-foreground">or ⌘ / Ctrl + Enter</span>
+          </div>
+
+          <div className="mt-2 flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              {hasChart ? "Start over with an example" : "Try an example"}
+            </p>
+            {EXAMPLES.map((ex, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setPrompt(ex)
+                  setCode("")
+                }}
+                className="rounded-md border border-border bg-card px-3 py-2.5 text-left text-sm text-card-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Output column — this is the one that grows */}
+        <section className="flex flex-col gap-3">
+          <div className="mermaid-output flex min-h-72 flex-1 items-center justify-center rounded-lg border border-border bg-card p-6">
+            {hasChart ? (
+              <MermaidRender code={code} />
+            ) : (
+              <p className="text-sm text-muted-foreground">Your flowchart will appear here.</p>
+            )}
+          </div>
+
+          {hasChart ? (
+            <>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={copyCode}>
+                  Copy code
+                </Button>
+                <Button variant="outline" size="sm" onClick={downloadSvg}>
+                  Download SVG
+                </Button>
+              </div>
+              <details className="text-sm">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                  View / edit diagram code
+                </summary>
+                <Textarea
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  spellCheck={false}
+                  className="mt-2 h-44 resize-none text-sm"
+                />
+              </details>
+            </>
+          ) : null}
+        </section>
       </div>
-
-      {/* Footer hint */}
-      <footer className="mt-10 pt-4 border-t border-border">
-        <p className="text-[10px] text-muted-foreground text-center uppercase">
-          Click stations to assign operators | Red badge = bottleneck | Press play to run
-        </p>
-      </footer>
-    </div>
-  )
-}
-
-export default function AssemblyLinePage() {
-  return (
-    <FactoryProvider>
-      <FactoryFloor />
-    </FactoryProvider>
+    </main>
   )
 }

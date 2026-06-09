@@ -1,20 +1,15 @@
 import React from "react"
 import type { Metadata } from 'next'
-import { Silkscreen } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
-const silkscreen = Silkscreen({ 
-  weight: ['400', '700'],
-  subsets: ["latin"] 
-});
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
-  title: 'Assembly Line Factory',
-  description: 'Visualize your business as a manufacturing line',
-  icons: {
-    icon: '/favicon.png',
-  },
+  title: 'Text to Flowchart',
+  description: 'Turn a plain-English description into a Mermaid flowchart',
 }
 
 export default function RootLayout({
@@ -24,8 +19,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         {children}
+        <Toaster />
         <Analytics />
       </body>
     </html>
